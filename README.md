@@ -171,11 +171,21 @@ Cowrie honeypot fully operational and logging attacker activity.
 
 ---
 
-# ⸻
-
 # 🧩 Part 2 — Azure Log Analytics Configuration for Cowrie Logs
 
-This section covers creating the custom log table and ingestion pipeline.
+This section covers creating the custom log table and ingestion pipeline. There will be a slight change in this part because Microsoft Monitoring Agent (MMA) no longer parses structured JSON (RawData) fields from uploaded files like it used to. This means if you upload cowrie.json, you will likely see empty values under the RawData column.
+
+What You Should Do Instead
+1. Upload cowrie.log Instead of cowrie.json
+
+Stick with everything else in the video, but upload the plain text cowrie.log file (not the JSON version). It still contains all the relevant SSH activity just in a different format.
+
+Default location: /home/cowrie/cowrie/var/log/cowrie/cowrie.log
+2. Use Regex to Parse Key Fields
+
+Since the data isn’t in JSON anymore, you’ll need to use regular expressions (regex) to pull out fields like IP, username, and password.
+
+Here’s a sample query that works with cowrie.log please feel free to use it as a starting point.
 
 ---
 
