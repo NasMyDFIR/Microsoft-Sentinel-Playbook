@@ -94,7 +94,7 @@ cd /home/cowrie
 ## 9. Download Cowrie
 
 ```
-git clone <Cowrie GitHub URL>
+git clone <http://github.com/cowrie/cowrie>
 cd cowrie
 ```
 
