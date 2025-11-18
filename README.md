@@ -402,3 +402,200 @@ Suggested saved queries:
 	1.	Azure Portal → Microsoft Sentinel
 	2.	Select workspace: ProjectHoneypot
 	3.	Click Add to enable
+
+# Microsoft Sentinel Workbook — External Authentication Activity
+
+This workbook visualizes **failed and successful authentication attempts** from both a **Linux honeypot (Cowrie)** and a **Windows RDP honeypot**. It uses **KQL queries**, **IP geolocation enrichment**, and **Sentinel map visualizations** to help analysts quickly understand external attack patterns.
+
+## 🚀 Features
+
+- Geo-mapped failed & successful SSH attempts (Cowrie honeypot)
+- Geo-mapped failed & successful Windows RDP logons (Event IDs 4625 & 4624)
+- Username and source IP summaries for successful logons
+- Heatmaps of top attacking countries
+- Fully customizable workbook layout for analyst workflows
+
+---
+
+## 🧰 Prerequisites
+
+- Cowrie honeypot logs ingested into Log Analytics  
+- Windows Security Events (4624/4625) ingested into Sentinel  
+- Microsoft Sentinel enabled on your Log Analytics workspace  
+
+---
+
+## 🛠️ Step-by-Step: Building the Workbook
+
+---
+
+### 1. Create a New Workbook
+
+1. Go to **Microsoft Sentinel → Workbooks → Add Workbook**
+2. Click **Edit** to start customizing
+3. Remove the default sample content
+
+---
+
+## 2. Linux Honeypot — Failed SSH Logons (Cowrie)
+
+### KQL Query
+
+```kql
+cowrie_json_CL
+| where RawData.eventid == "cowrie.login.failed"
+| extend source_IP = tostring(RawData.source_ip)
+| extend username = tostring(RawData.username)
+| extend ip_location = geo_info_from_ip_address(source_IP)
+| extend latitude = ip_location.latitude,
+        longitude = ip_location.longitude,
+        country = ip_location.country
+| summarize Count = count() by country, latitude, longitude
+| top 10 by Count
+````
+
+### Visualization
+
+* Visualization: **Map**
+* Latitude → `latitude`
+* Longitude → `longitude`
+* Metric → `Count`
+* Label → `country`
+* Recommended: **Heatmap**
+
+**Title:** *Failed SSH Logon Attempts*
+
+---
+
+## 3. Linux Honeypot — Successful SSH Logons
+
+Duplicate the previous map panel and update the query.
+
+```kql
+cowrie_json_CL
+| where RawData.eventid == "cowrie.login.success"
+| extend source_IP = tostring(RawData.source_ip)
+| extend username = tostring(RawData.username)
+| extend ip_location = geo_info_from_ip_address(source_IP)
+| extend latitude = ip_location.latitude,
+        longitude = ip_location.longitude,
+        country = ip_location.country
+| summarize Count = count() by country, latitude, longitude
+| top 10 by Count
+```
+
+**Visualization:** Map
+**Title:** *Successful SSH Logons*
+
+---
+
+## 4. Linux — Successful SSH Logons by User
+
+```kql
+cowrie_json_CL
+| where RawData.eventid == "cowrie.login.success"
+| extend source_IP = tostring(RawData.source_ip)
+| extend username = tostring(RawData.username)
+| summarize Count = count() by username, source_IP
+| top 50 by Count
+```
+
+**Visualization:** Table / Grid
+**Title:** *Successful SSH Logons by User*
+
+---
+
+## 5. Windows Honeypot — Failed Logons (Event ID 4625)
+
+### KQL Query
+
+```kql
+Event
+| where EventLog == "Security" and EventID == 4625
+| extend ev = parse_xml(EventData)
+| extend sourceIP = tostring(ev.Event.EventData.Data[18])
+| extend username = tostring(ev.Event.EventData.Data[5])
+| extend ip_location = geo_info_from_ip_address(sourceIP)
+| extend latitude = ip_location.latitude,
+        longitude = ip_location.longitude,
+        country = ip_location.country
+| summarize Count = count() by country, latitude, longitude
+```
+
+**Visualization:** Map
+**Title:** *Failed Windows Logons*
+
+---
+
+## 6. Windows — Successful Logons (Event ID 4624)
+
+```kql
+Event
+| where EventLog == "Security" and EventID == 4624
+| extend ev = parse_xml(EventData)
+| extend sourceIP = tostring(ev.Event.EventData.Data[18])
+| extend username = tostring(ev.Event.EventData.Data[5])
+| extend ip_location = geo_info_from_ip_address(sourceIP)
+| extend latitude = ip_location.latitude,
+        longitude = ip_location.longitude,
+        country = ip_location.country
+| summarize Count = count() by country, latitude, longitude
+```
+
+**Visualization:** Map
+**Title:** *Successful Windows Logons*
+
+---
+
+## 7. Windows — Successful Logons by User
+
+```kql
+Event
+| where EventLog == "Security" and EventID == 4624
+| extend ev = parse_xml(EventData)
+| extend sourceIP = tostring(ev.Event.EventData.Data[18])
+| extend username = tostring(ev.Event.EventData.Data[5])
+| summarize Count = count() by username, sourceIP
+| top 50 by Count
+```
+
+**Visualization:** Table / Grid
+**Title:** *Successful Windows Logons by User*
+
+---
+
+## 🧩 Layout Recommendations
+
+**Row 1**
+
+* Failed SSH
+* Successful SSH
+
+**Row 2**
+
+* Successful SSH by User
+
+**Row 3**
+
+* Failed Windows
+* Successful Windows
+
+**Row 4**
+
+* Windows Successful Logons by User
+
+Enable:
+
+* Custom width
+* Borders
+* Consistent row spacing
+
+---
+
+## 💾 Save the Workbook
+
+1. Click **Done Editing**
+2. Name it: **External Authentication Activity**
+3. Save to your Sentinel resource group
+
+Your workbook will now auto-refresh and act as an analyst dashboard.
