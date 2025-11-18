@@ -301,4 +301,104 @@ Create the rule.
 
 NSG → Allow All inbound → VM.
 
+Here is the clean, markdown-ready GitHub README section based on your content.
 
+# Part 4 — Windows RDP Honeypot, Event Filtering, Parsing & Sentinel Integration
+
+This section covers the deployment of a Windows-based RDP honeypot, configuration of Azure Data Collection (DCE/DCR), XPath filtering for Security Events 4624/4625, XML parsing using KQL, and integration with Microsoft Sentinel for detections and analytics.
+
+## 1. Deploy the Windows Honeypot VM
+
+1. Azure Portal → **Virtual Machines** → Create  
+2. Resource Group: `project`  
+3. VM Name: `WindowsHoneypot`  
+4. Image: **Windows Server 2019**  
+5. Size: `Standard_B2s`  
+6. Create admin credentials  
+7. Security Type: **Standard** (no Trusted Launch)  
+8. Deploy and record Public IP  
+9. Connect using RDP (`mstsc`)
+
+## 2. Prepare Log Analytics for Event Ingestion
+
+You will configure:
+
+- **Data Collection Endpoint (DCE)**
+- **Data Collection Rule (DCR)**
+- Mapping to workspace: `projecthoneypot`
+
+## 3. Create the Data Collection Endpoint (DCE)
+
+1. Azure Portal → **Data Collection Endpoints** → Create  
+2. Resource Group: `project`  
+3. Name: `WindowsPC`  
+4. Region: same as workspace  
+5. Review + Create  
+
+## 4. Create the Data Collection Rule (DCR)
+
+1. Azure Portal → **Data Collection Rules** → Create  
+2. Name: `RDPLogs`  
+3. Resource Group: `project`  
+4. Platform: **Windows**  
+5. Select DCE: `WindowsPC`  
+6. Add Resource → select `select the resource group you created`
+7. Data Sources → Windows Event Logs → **Custom**  
+8. Log name: `Security`  
+9. Add XPath filters (below)  
+10. Destination: **Azure Monitor Logs → projecthoneypot**  
+11. Create  
+
+## 5. XPath Filters (RDP Events Only)
+
+**Successful RDP Logons — Event ID 4624 (LogonType 7 or 10)**
+
+*[System[(EventID=4624)]] and *[EventData[Data[@Name=‘LogonType’]=‘10’ or Data[@Name=‘LogonType’]=‘7’]]
+
+**Failed RDP Logons — Event ID 4625**
+
+*[System[(EventID=4625)]]
+
+> Some Azure interfaces may require prefixing with `Security!`
+
+## 6. Validate XPath Locally (Optional)
+
+```powershell
+$xpath = '*[System[(EventID=4624)]] and *[EventData[Data[@Name="LogonType"]="10" or Data[@Name="LogonType"]="7"]]'
+Get-WinEvent -LogName Security -FilterXPath $xpath | FL
+```
+
+## 7. Confirm Log Ingestion
+
+Run in Log Analytics:
+
+```KQL
+Event
+| where EventLog == "Security"
+| take 20
+```
+
+## 8. Parse Windows Event XML with KQL
+
+Example — 4624 Logon Parsing (indexes could change with dataset)
+
+```KQL
+Event 
+| where EventID == 4624
+| extend Event = parse_xml(EventData)
+| extend src_ip = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(Event.DataItem)).EventData)).Data))[18].["#text"])
+| extend username = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(Event.DataItem)).EventData)).Data))[5].["#text"])
+| extend logontype = tostring(parse_json(tostring(parse_json(tostring(parse_json(tostring(Event.DataItem)).EventData)).Data))[8].["#text"])
+| project TimeGenerated,Computer,username,src_ip,logontype
+```
+
+## 9. Save Queries for Reuse
+
+Suggested saved queries:
+	•	Windows-Successful-Logons
+	•	Windows-Failed-Logons
+
+## 10. Enable Microsoft Sentinel
+	1.	Azure Portal → Microsoft Sentinel
+	2.	Select workspace: ProjectHoneypot
+	3.	Click Add to enable
