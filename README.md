@@ -1,5 +1,3 @@
-# Microsoft-Sentinel-Playbook
-
 # Azure Honeypot & Microsoft Sentinel End-to-End Lab
 
 **Linux (Cowrie) + Windows (RDP) Honeypots • Log Analytics • KQL • Sentinel • Automation (AbuseIPDB)**
@@ -165,40 +163,50 @@ Download via browser:
 http://<publicIP>:9999
 ```
 
-# Part 1 Complete
+### Part 1 Complete
 
 Cowrie honeypot fully operational and logging attacker activity.
 
----
-
-# 🧩 Part 2 — Azure Log Analytics Configuration for Cowrie Logs
+# Part 2 - Azure Log Analytics Configuration for Cowrie Logs
 
 This section covers creating the custom log table and ingestion pipeline. There will be a slight change in this part because Microsoft Monitoring Agent (MMA) no longer parses structured JSON (RawData) fields from uploaded files like it used to. This means if you upload cowrie.json, you will likely see empty values under the RawData column.
 
-What You Should Do Instead
-1. Upload cowrie.log Instead of cowrie.json
+## What You Should Do Instead
+- Upload cowrie.log instead of cowrie.json
 
-Stick with everything else in the video, but upload the plain text cowrie.log file (not the JSON version). It still contains all the relevant SSH activity just in a different format.
+Stick with everything else in the walkthrough, but upload the plain text cowrie.log file (not the JSON version). It still contains all the relevant SSH activity just in a different format.
 
 Default location: /home/cowrie/cowrie/var/log/cowrie/cowrie.log
-2. Use Regex to Parse Key Fields
+- Use Regex to Parse Key Fields
 
 Since the data isn’t in JSON anymore, you’ll need to use regular expressions (regex) to pull out fields like IP, username, and password.
 
 Here’s a sample query that works with cowrie.log please feel free to use it as a starting point.
 
----
+```
+// name of table - uncomment this line and replace with your table name
+| where RawData has "login attempt" and RawData has "succeeded"
+| extend 
+    SourceIP = extract(@"\[HoneyPotSSHTransport,\d+,([\d\.]+)\]", 1, RawData),
+    Username = extract(@"login attempt \[b'([^']+)'", 1, RawData),
+    Password = extract(@"\/b'([^']+)'\]", 1, RawData)
+| extend 
+    ip_location = geo_info_from_ip_address(SourceIP)
+| extend country = ip_location.country
+| extend latitude = ip_location.latitude
+| extend longitude = ip_location.longitude
+| summarize count() by tostring(country), Username, SourceIP
+| top 10 by count_
+```
 
-## 📘 1. Create Log Analytics Workspace
+## 1. Create Log Analytics Workspace
 
 ```
 Name: project-honeypot
 Group: project
 ```
 
----
-
-## 📄 2. Create Custom Table for Cowrie
+## 2. Create Custom Table for Cowrie
 
 Upload `cowrie.json` → Create Custom Log.
 
@@ -209,112 +217,89 @@ Type: Custom Log (Classic)
 
 Switch to manual schema management.
 
----
-
-## 🌐 3. Create Data Collection Endpoint (DCE)
+## 3. Create Data Collection Endpoint (DCE)
 
 ```
-Name: linux-machine
+Name: LinuxMachine
 ```
 
----
-
-## 🎯 4. Create Data Collection Rule (DCR)
+## 4. Create Data Collection Rule (DCR)
 
 ```
-Name: collect-cowrie  
+Name: CollectCowrie  
 Type: Linux  
-DCE: linux-machine  
+DCE: LinuxMachine  
 Resource: LinuxHoneypot VM  
 Source: Custom JSON Logs  
 Table: cowrie_json_CL  
 ```
 
----
-
-## 🔍 6. Query the Logs
+## 6. Query the Logs
 
 ```
 cowrie_json_CL
 | take 50
 ```
 
----
+# Part 3 - KQL Queries, Functions & Alerts for Cowrie Honeypot
 
-# ⸻
-
-# 🧩 Part 3 — KQL Queries, Functions & Alerts for Cowrie Honeypot
-
----
-
-## 🔐 1. Generate New Events
+## 1. Generate New Events
 
 Failed SSH & Successful SSH (root login).
 
----
-
-## 📊 2. Basic Query
+## 2. Basic Query
 
 ```
 cowrie_json_CL | take 10
 ```
 
----
-
-## 🛠️ 3. Add Columns with extend
+## 3. Add Columns with extend
 
 ```
-| extend sourceIP = RawData.source_ip
-| extend username = RawData.username
-| extend eventID  = RawData.eventid
+| extend src_ip = tostring(parse_json(RawData).source_ip)
+| extend username = tostring(parse_json(RawData).username)
+| extend eventID  = tostring(parse_json(RawData).eventid)
+| extend message = tostring(parse_json(RawData).message)
 ```
 
----
-
-## 📁 4. Clean Dataset with project
+## 4. Clean Dataset with project
 
 ```
-| project TimeGenerated, username, sourceIP, eventID, message
+| project TimeGenerated, username, src_ip, eventID, message
 ```
 
 Save as **cowrie-events**.
 
----
-
-## 🚨 5. Alert Rule — Successful SSH Login
+## 5. Alert Rule — Successful SSH Login
 
 Filter for:
 
 ```
-eventid == "cowrie.login.success"
+| where eventid == "cowrie.login.success"
 ```
 
-Create alert with:
+Create alert by:
+1. Click New Alert Rule.
+2. Signal Type: Custom log search.
+3. Condition:
+- Threshold operator: >
+- Threshold value: 0
+- Loopback window: 5 minutes
+4. Action Group:
+- Create new
+- Region: East US
+- Notification type: Email/SMS/Push/Voice
+- Add your email
+5. Alert Details:
+- Severity: Informational
+- Name: Network-T1078-SSH-Successful-Login
+- Description: Successful login :(
 
-```
-Name: Network-T1078-SSH-Successful-Login
-Severity: Informational
-```
+Create the rule.
 
----
-
-## ⚙️ 6. Save Full KQL Parsing Function
-
-```
-cowrie
-```
-
-Saved as a Function in category "honeypot".
-
----
-
-## 🌍 7. Expose Honeypot Globally
+## 7. Expose Honeypot Globally
 
 NSG → Allow All inbound → VM.
-
----
-
-# ⸻
 
 # 🪟 Part 4 — Windows RDP Honeypot + Event Filtering + Sentinel Integration
 
