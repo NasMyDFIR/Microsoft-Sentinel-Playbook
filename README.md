@@ -297,13 +297,11 @@ Create alert by:
 
 Create the rule.
 
-## 7. Expose Honeypot Globally
+## 6. Expose Honeypot Globally
 
 NSG → Allow All inbound → VM.
 
-# 🪟 Part 4 — Windows RDP Honeypot + Event Filtering + Sentinel Integration
-
----
+# Part 4 — Windows RDP Honeypot + Event Filtering + Sentinel Integration
 
 ## 1. Deploy Windows Honeypot VM
 
