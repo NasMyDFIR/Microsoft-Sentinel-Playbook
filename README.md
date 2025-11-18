@@ -163,9 +163,9 @@ Download via browser:
 http://<publicIP>:9999
 ```
 
-### Part 1 Complete
-
 Cowrie honeypot fully operational and logging attacker activity.
+
+---
 
 # Part 2 - Azure Log Analytics Configuration for Cowrie Logs
 
