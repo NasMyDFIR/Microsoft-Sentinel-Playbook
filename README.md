@@ -598,4 +598,124 @@ Enable:
 2. Name it: **External Authentication Activity**
 3. Save to your Sentinel resource group
 
-Your workbook will now auto-refresh and act as an analyst dashboard.
+# Part 6 — Automation & Playbooks (IP Enrichment with AbuseIPDB)
+
+This section explains how to automate IP enrichment for Microsoft Sentinel incidents using a **Logic App playbook** that queries **AbuseIPDB** and posts formatted results back into incident comments.
+
+## Goal
+
+Automatically enrich IP addresses extracted from Sentinel incidents using AbuseIPDB and append readable, actionable reputation data directly into the incident comments.
+
+## What You Will Build
+
+1. An **Automation Rule** that triggers when an Incident is created.
+2. A **Logic App Playbook** that:
+   - Extracts IP entities,
+   - Iterates through each IP,
+   - Calls the AbuseIPDB API for reputation data,
+   - Parses the JSON response,
+   - Posts a formatted comment back into the incident.
+3. Proper permissions for the Playbook to update incidents.
+4. An **Analytics Rule** that generates incidents (which then trigger the playbook).
+
+## Prerequisites
+
+- Microsoft Sentinel enabled on your Log Analytics workspace  
+- AbuseIPDB account + API key  
+- Contributor access to the Azure Resource Group containing Sentinel & Logic Apps  
+
+# Step-by-Step Walkthrough
+
+## 1) Create an Automation Rule → Playbook (Incident Trigger)
+
+1. Go to **Microsoft Sentinel → Threat Management → Automation**
+2. Select **Create → Playbook with incident trigger**
+3. Name your playbook (example: `IP-Enrichment`)
+4. Click **Create** to open the Logic Apps Designer
+
+## 2) Logic App: Get IPs From Incident Entities
+
+1. Add a new step → search **Microsoft Sentinel**
+2. Choose **Get IPs** (or "Get entities" → extract IPs)
+3. Set the input to the Incident `entities` payload
+
+> Sentinel stores fields as *entities* — IP, accounts, hosts, URLs, etc.
+
+## 3) For Each IP → Call AbuseIPDB via HTTP GET
+
+1. Add a **For each** loop using the IP list
+2. Inside the loop, add an **HTTP** action:
+
+## 4) Parse the JSON Response
+
+1. Add **Parse JSON** (built-in)
+2. For *Content*, choose the HTTP action `Body`
+3. Click **Use sample payload to generate schema**
+4. Paste a sample API response from AbuseIPDB docs (or from a test run)
+
+## 5) Post a Formatted Comment Back to the Incident
+
+1. Add action: **Microsoft Sentinel → Add comment to incident**
+2. For **Incident ARM ID**, choose `IncidentArmId` from the trigger
+3. Build a readable comment using dynamic fields
+4. Save the playbook
+
+## 6) Assign the Playbook Permission to Update Incidents
+1. Sentinel → Settings → Configure Permissions → Project(Resource group) → Apply
+1. Sentinel → **Automation → Active Playbooks**
+2. Select your playbook → **Identity**
+3. Add a role assignment:
+   - **Scope:** Resource group
+   - **Role:** `Microsoft Sentinel Contributor`
+4. Save
+
+> Best practice: Create a least-privilege custom role in production.
+
+---
+
+## 7) Create an Analytics Rule That Generates Incidents
+
+This triggers your Automation → Playbook workflow.
+
+1. Sentinel → **Analytics → Create**
+2. Choose **Scheduled query rule**
+3. Rule example:
+
+```kql
+cowrie_json_CL
+| extend src_ip = tostring(parse_json(RawData).src_ip)
+| extend username = tostring(parse_json(RawData).username)
+| extend message = tostring(parse_json(RawData).message)
+| extend eventid = tostring(parse_json(RawData).eventid)
+| where eventid == "cowrie.login.success"
+| project TimeGenerated, username, src_ip, eventid, message
+```
+
+4. Under **Entity mapping**, map:
+
+   * Entity type: `IP`
+   * Field: `source_IP` (or your equivalent)
+
+5. Under **Automated response**, add your automation rule (IP-Enrichment)
+
+6. Save the rule
+
+## 8) Test the Workflow
+
+1. Trigger the analytics rule (wait or run manually)
+2. A new incident appears
+3. Playbook runs automatically:
+
+   * Extracts IP entities
+   * Loops through IPs
+   * Calls AbuseIPDB
+   * Parses JSON
+   * Adds a formatted comment
+4. Open the incident → verify the added comment
+
+# End-to-End Flow
+
+1. Analytics rule creates an Incident
+2. Automation rule triggers playbook
+3. Playbook extracts IPs → calls AbuseIPDB → posts enriched comment
+4. Analyst opens incident → instantly sees reputation context
