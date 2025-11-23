@@ -322,7 +322,7 @@ Create the rule.
 
 NSG → Allow All inbound → VM.
 
-# Part 4 — Windows RDP Honeypot, Event Filtering, Parsing & Sentinel Integration
+# Part 4 - Windows RDP Honeypot, Event Filtering, Parsing & Sentinel Integration
 
 This section covers the deployment of a Windows-based RDP honeypot, configuration of Azure Data Collection (DCE/DCR), XPath filtering for Security Events 4624/4625, XML parsing using KQL, and integration with Microsoft Sentinel for detections and analytics.
 
@@ -344,7 +344,7 @@ You will configure:
 
 - **Data Collection Endpoint (DCE)**
 - **Data Collection Rule (DCR)**
-- Mapping to workspace: `projecthoneypot`
+- Mapping to workspace: `ProjectHoneypot`
 
 ## 3. Create the Data Collection Endpoint (DCE)
 
@@ -365,7 +365,7 @@ You will configure:
 7. Data Sources → Windows Event Logs → **Custom**  
 8. Log name: `Security`  
 9. Add XPath filters (below)  
-10. Destination: **Azure Monitor Logs → projecthoneypot**  
+10. Destination: **Azure Monitor Logs → ProjectHoneypot**  
 11. Create  
 
 ## 5. XPath Filters (RDP Events Only)
@@ -378,7 +378,32 @@ You will configure:
 
 *[System[(EventID=4625)]]
 
+<div>
+    <img src="https://i.imgur.com/SVMcyza.png" />
+</div>
+
+*Ref 1: XPath Filter I*
+
+<div>
+    <img src="https://i.imgur.com/Ff8BmM8.png" />
+</div>
+
+*Ref 1: XPath Filter II*
+
+<div>
+    <img src="https://i.imgur.com/3frOrDz.png" />
+</div>
+
+*Ref 1: XPath Filter III*
+
 > Some Azure interfaces may require prefixing with `Security!`
+
+<div>
+    <img src="https://i.imgur.com/yoeuxMI.png" />
+</div>
+
+*Ref 1: Custom Data Collection Rule RDP*
+
 
 ## 6. Validate XPath Locally (Optional)
 
@@ -399,7 +424,7 @@ Event
 
 ## 8. Parse Windows Event XML with KQL
 
-Example — 4624 Logon Parsing (indexes could change with dataset)
+Example - 4624 Logon Parsing (indexes could change with dataset)
 
 ```KQL
 Event 
@@ -422,7 +447,7 @@ Suggested saved queries:
 	2.	Select workspace: ProjectHoneypot
 	3.	Click Add to enable
 
-# Microsoft Sentinel Workbook — External Authentication Activity
+# Part 5 - Microsoft Sentinel Workbook (External Authentication Activity)
 
 This workbook visualizes **failed and successful authentication attempts** from both a **Linux honeypot (Cowrie)** and a **Windows RDP honeypot**. It uses **KQL queries**, **IP geolocation enrichment**, and **Sentinel map visualizations** to help analysts quickly understand external attack patterns.
 
