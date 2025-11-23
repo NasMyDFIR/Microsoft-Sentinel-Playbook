@@ -165,8 +165,6 @@ http://<publicIP>:9999
 
 Cowrie honeypot fully operational and logging attacker activity.
 
----
-
 # Part 2 - Azure Log Analytics Configuration for Cowrie Logs
 
 This section covers creating the custom log table and ingestion pipeline. There will be a slight change in this part because Microsoft Monitoring Agent (MMA) no longer parses structured JSON (RawData) fields from uploaded files like it used to. This means if you upload cowrie.json, you will likely see empty values under the RawData column.
