@@ -151,7 +151,7 @@ ssh root@<publicIP> -p 2222
 
 ## 15. Extract Logs
 
-Run simple server:
+Run simple server from the cowrie directory:
 
 ```
 python3 -m http.server 9999
@@ -231,7 +231,7 @@ Name: LinuxMachine
     <img src="https://i.imgur.com/y9EMXNX.png" />
 </div>
 
-*Ref 1: Created Data Collection Endpoint*
+*Ref 2: Created Data Collection Endpoint*
 
 ## 4. Create Data Collection Rule (DCR)
 
@@ -248,7 +248,7 @@ Table: cowrie_json_CL
     <img src="https://i.imgur.com/RAYk1O1.png" />
 </div>
 
-*Ref 1: Created Data Collection Rule*
+*Ref 3: Created Data Collection Rule*
 
 ## 6. Query the Logs
 
@@ -260,7 +260,7 @@ cowrie_json_CL
     <img src="https://i.imgur.com/lW3X5ra.png" />
 </div>
 
-*Ref 1: Linux Honepot*
+*Ref 4: Linux Honepot*
 
 # Part 3 - KQL Queries, Functions & Alerts for Cowrie Honeypot
 
@@ -382,19 +382,19 @@ You will configure:
     <img src="https://i.imgur.com/SVMcyza.png" />
 </div>
 
-*Ref 1: XPath Filter I*
+*Ref 5: XPath Filter I*
 
 <div>
     <img src="https://i.imgur.com/Ff8BmM8.png" />
 </div>
 
-*Ref 1: XPath Filter II*
+*Ref 6: XPath Filter II*
 
 <div>
     <img src="https://i.imgur.com/3frOrDz.png" />
 </div>
 
-*Ref 1: XPath Filter III*
+*Ref 7: XPath Filter III*
 
 > Some Azure interfaces may require prefixing with `Security!`
 
@@ -402,7 +402,7 @@ You will configure:
     <img src="https://i.imgur.com/yoeuxMI.png" />
 </div>
 
-*Ref 1: Custom Data Collection Rule RDP*
+*Ref 8: Custom Data Collection Rule RDP*
 
 
 ## 6. Validate XPath Locally (Optional)
@@ -524,7 +524,7 @@ cowrie_json_CL
     <img src="https://i.imgur.com/RHrIoEd.png" />
 </div>
 
-*Ref 1: Failed SSH Logon Attempts & Successful SSH Logons*
+*Ref 9: Failed SSH Logon Attempts & Successful SSH Logons*
 
 ## 4. Linux - Successful SSH Logons by User
 
@@ -547,7 +547,7 @@ cowrie_json_CL
     <img src="https://i.imgur.com/lNPy43p.png" />
 </div>
 
-*Ref 1: Successful SSH Logons by User*
+*Ref 10: Successful SSH Logons by User*
 
 ## 5. Windows Honeypot - Failed Logons (Event ID 4625)
 
@@ -588,7 +588,7 @@ Event
     <img src="https://i.imgur.com/Ewx04M2.png" />
 </div>
 
-*Ref 1: Failed and Successful Windows Logons*
+*Ref 11: Failed and Successful Windows Logons*
 
 ## 7. Windows - Successful Logons by User
 
@@ -611,7 +611,7 @@ Event
     <img src="https://i.imgur.com/lNPy43p.png" />
 </div>
 
-*Ref 1: Successful Windows Logons by User*
+*Ref 12: Successful Windows Logons by User*
 
 ## Layout Recommendations
 
@@ -645,7 +645,7 @@ Enable:
 2. Name it: **External Authentication Activity**
 3. Save to your Sentinel resource group
 
-# Part 6 — Automation & Playbooks (IP Enrichment with AbuseIPDB)
+# Part 6 - Automation & Playbooks (IP Enrichment with AbuseIPDB)
 
 This section explains how to automate IP enrichment for Microsoft Sentinel incidents using a **Logic App playbook** that queries **AbuseIPDB** and posts formatted results back into incident comments.
 
@@ -669,7 +669,13 @@ Automatically enrich IP addresses extracted from Sentinel incidents using AbuseI
 
 - Microsoft Sentinel enabled on your Log Analytics workspace  
 - AbuseIPDB account + API key  
-- Contributor access to the Azure Resource Group containing Sentinel & Logic Apps  
+- Contributor access to the Azure Resource Group containing Sentinel & Logic Apps
+
+<div>
+    <img src="https://i.imgur.com/ZrJgg5D.png" />
+</div>
+
+*Ref 13: AbuseIPDB account*
 
 # Step-by-Step Walkthrough
 
@@ -677,8 +683,14 @@ Automatically enrich IP addresses extracted from Sentinel incidents using AbuseI
 
 1. Go to **Microsoft Sentinel → Threat Management → Automation**
 2. Select **Create → Playbook with incident trigger**
-3. Name your playbook (example: `IP-Enrichment`)
+3. Name your playbook (example: `IPEnrichment`)
 4. Click **Create** to open the Logic Apps Designer
+
+<div>
+    <img src="https://i.imgur.com/1ZIMElB.png" />
+</div>
+
+*Ref 14: Logic app designer*
 
 ## 2) Logic App: Get IPs From Incident Entities
 
@@ -693,6 +705,12 @@ Automatically enrich IP addresses extracted from Sentinel incidents using AbuseI
 1. Add a **For each** loop using the IP list
 2. Inside the loop, add an **HTTP** action:
 
+<div>
+    <img src="https://i.imgur.com/0uSXCgv.png" />
+</div>
+
+*Ref 15: AbuseIPDB via HTTP GET*
+
 ## 4) Parse the JSON Response
 
 1. Add **Parse JSON** (built-in)
@@ -700,12 +718,24 @@ Automatically enrich IP addresses extracted from Sentinel incidents using AbuseI
 3. Click **Use sample payload to generate schema**
 4. Paste a sample API response from AbuseIPDB docs (or from a test run)
 
+<div>
+    <img src="https://i.imgur.com/rU06bGb.png" />
+</div>
+
+*Ref 16: Logic app designer II*
+
 ## 5) Post a Formatted Comment Back to the Incident
 
 1. Add action: **Microsoft Sentinel → Add comment to incident**
 2. For **Incident ARM ID**, choose `IncidentArmId` from the trigger
 3. Build a readable comment using dynamic fields
 4. Save the playbook
+
+<div>
+    <img src="https://i.imgur.com/QdT1yLQ.png" />
+</div>
+
+*Ref 17: Logic app designer III*
 
 ## 6) Assign the Playbook Permission to Update Incidents
 1. Sentinel → Settings → Configure Permissions → Project(Resource group) → Apply
@@ -717,8 +747,6 @@ Automatically enrich IP addresses extracted from Sentinel incidents using AbuseI
 4. Save
 
 > Best practice: Create a least-privilege custom role in production.
-
----
 
 ## 7) Create an Analytics Rule That Generates Incidents
 
@@ -743,7 +771,7 @@ cowrie_json_CL
    * Entity type: `IP`
    * Field: `source_IP` (or your equivalent)
 
-5. Under **Automated response**, add your automation rule (IP-Enrichment)
+5. Under **Automated response**, add your automation rule (IPEnrichment)
 
 6. Save the rule
 
@@ -759,6 +787,12 @@ cowrie_json_CL
    * Parses JSON
    * Adds a formatted comment
 4. Open the incident → verify the added comment
+
+<div>
+    <img src="https://i.imgur.com/oWvzbsf.png" />
+</div>
+
+*Ref 18: Incident Comment*
 
 # End-to-End Flow
 
