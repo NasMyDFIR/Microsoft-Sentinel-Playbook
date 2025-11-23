@@ -13,7 +13,7 @@ It includes:
 * **Microsoft Sentinel workbooks & playbooks**
 * **IP enrichment automation with AbuseIPDB**
 
-# Part 1-Linux Honeypot (Cowrie) Deployment on Azure
+# Part 1 - Linux Honeypot (Cowrie) Deployment on Azure
 
 This section covers deploying the Cowrie Linux honeypot on Ubuntu in Azure to capture attacker activity.
 
@@ -323,8 +323,6 @@ Create the rule.
 ## 6. Expose Honeypot Globally
 
 NSG → Allow All inbound → VM.
-
-Here is the clean, markdown-ready GitHub README section based on your content.
 
 # Part 4 — Windows RDP Honeypot, Event Filtering, Parsing & Sentinel Integration
 
