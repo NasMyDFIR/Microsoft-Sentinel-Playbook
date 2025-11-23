@@ -202,7 +202,7 @@ Here’s a sample query that works with cowrie.log please feel free to use it as
 ## 1. Create Log Analytics Workspace
 
 ```
-Name: project-honeypot
+Name: ProjectHoneypot
 Group: project
 ```
 
@@ -217,11 +217,23 @@ Type: Custom Log (Classic)
 
 Switch to manual schema management.
 
+<div>
+    <img src="https://i.imgur.com/XXUdpK7.png" />
+</div>
+
+*Ref 1: Created Schema table*
+
 ## 3. Create Data Collection Endpoint (DCE)
 
 ```
 Name: LinuxMachine
 ```
+
+<div>
+    <img src="https://i.imgur.com/y9EMXNX.png" />
+</div>
+
+*Ref 1: Created Data Collection Endpoint*
 
 ## 4. Create Data Collection Rule (DCR)
 
@@ -234,12 +246,23 @@ Source: Custom JSON Logs
 Table: cowrie_json_CL  
 ```
 
+<div>
+    <img src="https://i.imgur.com/RAYk1O1.png" />
+</div>
+
+*Ref 1: Created Data Collection Rule*
+
 ## 6. Query the Logs
 
 ```
 cowrie_json_CL
 | take 50
 ```
+<div>
+    <img src="https://i.imgur.com/lW3X5ra.png" />
+</div>
+
+*Ref 1: Linux Honepot*
 
 # Part 3 - KQL Queries, Functions & Alerts for Cowrie Honeypot
 
